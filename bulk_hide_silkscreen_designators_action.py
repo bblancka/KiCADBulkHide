@@ -20,6 +20,7 @@ class BulkHideSilkscreenDesignators(pcbnew.ActionPlugin):
         # Build list of footprints from selection
         # Handle both direct footprint selection and text field selection
         selected_footprints = []
+        selected_footprint_ids = set()
         selection_iteration_failed = False
 
         try:
@@ -28,15 +29,19 @@ class BulkHideSilkscreenDesignators(pcbnew.ActionPlugin):
 
                 if item_type == 'FOOTPRINT':
                     # Direct footprint selection
-                    if item not in selected_footprints:
+                    item_id = id(item)
+                    if item_id not in selected_footprint_ids:
                         selected_footprints.append(item)
+                        selected_footprint_ids.add(item_id)
                 elif item_type in TEXT_FIELD_TYPES:
                     # Text field selected - find parent footprint
                     parent = item.GetParent()
-                    if parent and type(parent).__name__ == 'FOOTPRINT' and parent not in selected_footprints:
+                    parent_id = id(parent)
+                    if parent and type(parent).__name__ == 'FOOTPRINT' and parent_id not in selected_footprint_ids:
                         selected_footprints.append(parent)
+                        selected_footprint_ids.add(parent_id)
         except TypeError:
-            # Some KiCad selection objects (e.g. PCB_FIELD) can't be cast during iteration
+            # Some KiCad selection objects (e.g. PCB_FIELD) can raise TypeError during iteration
             selection_iteration_failed = True
 
         # Fallback for unsupported selection object types: scan selected footprints and text fields
@@ -46,10 +51,12 @@ class BulkHideSilkscreenDesignators(pcbnew.ActionPlugin):
                 for footprint in board.GetFootprints():
                     reference = footprint.Reference()
                     value = footprint.Value()
+                    footprint_id = id(footprint)
                     if (footprint.IsSelected() or
                         (reference and reference.IsSelected()) or
-                        (value and value.IsSelected())) and footprint not in selected_footprints:
+                        (value and value.IsSelected())) and footprint_id not in selected_footprint_ids:
                         selected_footprints.append(footprint)
+                        selected_footprint_ids.add(footprint_id)
         
         if len(selected_footprints) == 0:
             # Show info dialog
