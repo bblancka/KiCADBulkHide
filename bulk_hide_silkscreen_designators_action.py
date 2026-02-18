@@ -17,24 +17,46 @@ class BulkHideSilkscreenDesignators(pcbnew.ActionPlugin):
     def Run(self):
         selection = pcbnew.GetCurrentSelection()
 
-        # Build set of footprints from selection
+        # Build list of footprints from selection
         # Handle both direct footprint selection and text field selection
-        footprint_set = set()
+        selected_footprints = []
+        selected_footprint_ids = set()
+        selection_iteration_failed = False
 
-        for item in selection:
-            item_type = type(item).__name__
+        try:
+            for item in selection:
+                item_type = type(item).__name__
 
-            if item_type == 'FOOTPRINT':
-                # Direct footprint selection
-                footprint_set.add(item)
-            elif item_type in TEXT_FIELD_TYPES:
-                # Text field selected - find parent footprint
-                parent = item.GetParent()
-                if parent and type(parent).__name__ == 'FOOTPRINT':
-                    footprint_set.add(parent)
+                if item_type == 'FOOTPRINT':
+                    # Direct footprint selection
+                    item_id = id(item)
+                    if item_id not in selected_footprint_ids:
+                        selected_footprints.append(item)
+                        selected_footprint_ids.add(item_id)
+                elif item_type in TEXT_FIELD_TYPES:
+                    # Text field selected - find parent footprint
+                    parent = item.GetParent()
+                    parent_id = id(parent)
+                    if parent and type(parent).__name__ == 'FOOTPRINT' and parent_id not in selected_footprint_ids:
+                        selected_footprints.append(parent)
+                        selected_footprint_ids.add(parent_id)
+        except TypeError:
+            # Some KiCad selection objects (e.g. PCB_FIELD) can raise TypeError during iteration
+            selection_iteration_failed = True
 
-        # Convert set to list
-        selected_footprints = list(footprint_set)
+        # Fallback for unsupported selection object types: scan selected footprints and text fields
+        if selection_iteration_failed:
+            board = pcbnew.GetBoard()
+            if board:
+                for footprint in board.GetFootprints():
+                    reference = footprint.Reference()
+                    value = footprint.Value()
+                    footprint_id = id(footprint)
+                    if (footprint.IsSelected() or
+                        (reference and reference.IsSelected()) or
+                        (value and value.IsSelected())) and footprint_id not in selected_footprint_ids:
+                        selected_footprints.append(footprint)
+                        selected_footprint_ids.add(footprint_id)
         
         if len(selected_footprints) == 0:
             # Show info dialog
