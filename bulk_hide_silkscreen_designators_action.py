@@ -79,6 +79,7 @@ class BulkHideSilkscreenDesignators(pcbnew.ActionPlugin):
         
         panel.SetSizer(sizer)
         sizer.Fit(dlg)
+        dlg.SetMinSize((400, 200))  # Ensure consistent appearance on high-DPI displays
         
         if dlg.ShowModal() == wx.ID_OK:
             hide_reference = cb_reference.GetValue()
