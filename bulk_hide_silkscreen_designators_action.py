@@ -3,6 +3,9 @@ import pcbnew
 import os.path
 import wx
 
+# Text field types that may be selected instead of footprints
+TEXT_FIELD_TYPES = ['PCB_TEXT', 'FP_TEXT', 'PCB_FIELD']
+
 class BulkHideSilkscreenDesignators(pcbnew.ActionPlugin):
     def defaults(self):
         self.name = "Bulk hide silkscreen designators"
@@ -24,7 +27,7 @@ class BulkHideSilkscreenDesignators(pcbnew.ActionPlugin):
             if item_type == 'FOOTPRINT':
                 # Direct footprint selection
                 footprint_set.add(item)
-            elif item_type in ['PCB_TEXT', 'FP_TEXT', 'PCB_FIELD']:
+            elif item_type in TEXT_FIELD_TYPES:
                 # Text field selected - find parent footprint
                 parent = item.GetParent()
                 if parent and type(parent).__name__ == 'FOOTPRINT':
