@@ -80,10 +80,10 @@ class BulkHideSilkscreenDesignators(pcbnew.ActionPlugin):
         if dlg.ShowModal() == wx.ID_OK:
             hide_reference = cb_reference.GetValue()
             hide_value = cb_value.GetValue()
-            dlg.Destroy()
             
             # Validate that at least one option is selected
             if not hide_reference and not hide_value:
+                dlg.Destroy()
                 warning_dlg = wx.MessageDialog(
                     None,
                     "Please select at least one option to hide.",
@@ -93,6 +93,8 @@ class BulkHideSilkscreenDesignators(pcbnew.ActionPlugin):
                 warning_dlg.ShowModal()
                 warning_dlg.Destroy()
                 return
+            
+            dlg.Destroy()
             
             for selected_footprint in selected_footprints:
                 # Hide reference if selected
