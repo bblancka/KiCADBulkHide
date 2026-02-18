@@ -12,7 +12,6 @@ class BulkHideSilkscreenDesignators(pcbnew.ActionPlugin):
         self.icon_file_name = os.path.join(os.path.dirname(__file__), 'icon.png')
 
     def Run(self):
-        board = pcbnew.GetBoard()
         selection = pcbnew.GetCurrentSelection()
 
         # Build set of footprints from selection
@@ -82,6 +81,18 @@ class BulkHideSilkscreenDesignators(pcbnew.ActionPlugin):
             hide_reference = cb_reference.GetValue()
             hide_value = cb_value.GetValue()
             dlg.Destroy()
+            
+            # Validate that at least one option is selected
+            if not hide_reference and not hide_value:
+                warning_dlg = wx.MessageDialog(
+                    None,
+                    "Please select at least one option to hide.",
+                    "No option selected",
+                    wx.OK | wx.ICON_WARNING
+                )
+                warning_dlg.ShowModal()
+                warning_dlg.Destroy()
+                return
             
             for selected_footprint in selected_footprints:
                 # Hide reference if selected
