@@ -20,7 +20,7 @@ class BulkHideSilkscreenDesignators(pcbnew.ActionPlugin):
 
         for item in selection:
             item_type = type(item).__name__
-            
+
             if item_type == 'FOOTPRINT':
                 # Direct footprint selection
                 footprint_set.add(item)
