@@ -17,24 +17,39 @@ class BulkHideSilkscreenDesignators(pcbnew.ActionPlugin):
     def Run(self):
         selection = pcbnew.GetCurrentSelection()
 
-        # Build set of footprints from selection
+        # Build list of footprints from selection
         # Handle both direct footprint selection and text field selection
-        footprint_set = set()
+        selected_footprints = []
+        selection_iteration_failed = False
 
-        for item in selection:
-            item_type = type(item).__name__
+        try:
+            for item in selection:
+                item_type = type(item).__name__
 
-            if item_type == 'FOOTPRINT':
-                # Direct footprint selection
-                footprint_set.add(item)
-            elif item_type in TEXT_FIELD_TYPES:
-                # Text field selected - find parent footprint
-                parent = item.GetParent()
-                if parent and type(parent).__name__ == 'FOOTPRINT':
-                    footprint_set.add(parent)
+                if item_type == 'FOOTPRINT':
+                    # Direct footprint selection
+                    if item not in selected_footprints:
+                        selected_footprints.append(item)
+                elif item_type in TEXT_FIELD_TYPES:
+                    # Text field selected - find parent footprint
+                    parent = item.GetParent()
+                    if parent and type(parent).__name__ == 'FOOTPRINT' and parent not in selected_footprints:
+                        selected_footprints.append(parent)
+        except TypeError:
+            # Some KiCad selection objects (e.g. PCB_FIELD) can't be cast during iteration
+            selection_iteration_failed = True
 
-        # Convert set to list
-        selected_footprints = list(footprint_set)
+        # Fallback for unsupported selection object types: scan selected footprints and text fields
+        if selection_iteration_failed:
+            board = pcbnew.GetBoard()
+            if board:
+                for footprint in board.GetFootprints():
+                    reference = footprint.Reference()
+                    value = footprint.Value()
+                    if (footprint.IsSelected() or
+                        (reference and reference.IsSelected()) or
+                        (value and value.IsSelected())) and footprint not in selected_footprints:
+                        selected_footprints.append(footprint)
         
         if len(selected_footprints) == 0:
             # Show info dialog
